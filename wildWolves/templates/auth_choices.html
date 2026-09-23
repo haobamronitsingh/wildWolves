@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ title }} · WildWolves</title>
+<style>:root{font-family:"Segoe UI",sans-serif;color:#17231f;background:#f5f1e8}body{min-height:100vh;display:grid;place-items:center;margin:0;padding:24px}.box{width:min(100%,700px);background:#fff;padding:42px;border:1px solid #d9d8cb}h1{font:500 2.7rem Georgia,serif;margin:0 0 8px}.intro{color:#66756e;margin:0 0 28px}.choices{display:grid;grid-template-columns:1fr 1fr;gap:16px}.choice{display:block;padding:25px;border:1px solid #d9d8cb;text-decoration:none}.choice:hover{border-color:#d7a34c}.choice h2{font:500 1.5rem Georgia,serif;margin:0 0 7px}.choice p{color:#66756e;margin:0}.back{display:inline-block;margin-top:28px;color:#173f3b;font-weight:700}@media(max-width:580px){.choices{grid-template-columns:1fr}}</style>
+</head>
+<body><main class="box"><h1>{{ heading }}</h1><p class="intro">Choose the experience that fits your journey.</p><div class="choices"><a class="choice" href="{% url tourist_url %}"><h2>{{ tourist_label }}</h2><p>Discover destinations, request local help, and plan your trip.</p></a><a class="choice" href="{% url guide_url %}"><h2>{{ guide_label }}</h2><p>Share your knowledge and help visitors experience Manipur.</p></a></div><a class="back" href="{% url 'home' %}">← Back to homepage</a></main></body>
+</html>

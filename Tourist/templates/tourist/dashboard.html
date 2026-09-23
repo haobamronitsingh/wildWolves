@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f4f7fb;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { width: min(100% - 2rem, 68rem); margin: 0 auto; padding: 1.25rem 0 2rem; }
+      .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
+      h1 { margin: 0; color: #123b6d; font-size: clamp(1.65rem, 5vw, 2.35rem); }
+      h2 { margin: 0 0 1rem; color: #123b6d; font-size: 1.2rem; }
+      .intro, .muted { color: #64748b; }
+      .card { margin-bottom: 1rem; padding: 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 .35rem 1.2rem rgb(15 23 42 / 5%); }
+      .field { margin-bottom: 1rem; }
+      label { display: block; margin-bottom: .4rem; font-weight: 700; }
+      input, select, textarea { width: 100%; padding: .75rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: #fff; color: inherit; font: inherit; }
+      textarea { min-height: 6rem; resize: vertical; }
+      input:focus, select:focus, textarea:focus { outline: 3px solid #bfdbfe; border-color: #2563eb; }
+      button { width: 100%; min-height: 2.9rem; padding: .7rem 1rem; border: 0; border-radius: .55rem; color: #fff; background: #2563eb; font: inherit; font-weight: 700; cursor: pointer; }
+      button:hover { background: #1d4ed8; }
+      .logout { width: auto; min-height: 2.5rem; padding: .55rem .9rem; background: #e2e8f0; color: #334155; }
+      .logout:hover { background: #cbd5e1; }
+      .request-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+      .request { padding: 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; }
+      .request-title { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-weight: 700; }
+      .status { display: inline-block; padding: .25rem .55rem; border-radius: 999px; color: #075985; background: #e0f2fe; font-size: .8rem; font-weight: 700; }
+      .price { color: #166534; font-weight: 800; }
+      .errors { color: #b91c1c; font-size: .875rem; }
+      .footer { margin-top: 1.5rem; text-align: right; }
+      @media (min-width: 44rem) {
+        main { padding-top: 2.5rem; }
+        .card { padding: 1.5rem; }
+        button:not(.logout) { width: auto; }
+      }
+      @media (max-width: 35rem) {
+        .topbar { flex-direction: column; }
+        .logout { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div>
+          <h1>Welcome, {{ request.user.username }}</h1>
+          <p class="intro">Tell available local guides where you need assistance.</p>
+        </div>
+        <form method="post" action="{% url 'tourist:logout' %}">
+          {% csrf_token %}<button class="logout" type="submit">Log out</button>
+        </form>
+      </header>
+      <section class="card">
+      <h2>Request guide assistance</h2>
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="errors">{{ error }}</small>{% endfor %}</div>
+        {% endfor %}
+        <button type="submit">Find a local guide</button>
+      </form>
+      </section>
+      <section class="card">
+      <h2>Your requests</h2>
+      {% if requests %}
+        <ul class="request-list">
+          {% for assistance_request in requests %}
+            <li class="request">
+              <div class="request-title"><span>{{ assistance_request.area }}</span><span class="status">{{ assistance_request.get_status_display }}</span></div>
+              <p>{{ assistance_request.package_label }} &middot; {{ assistance_request.tourist_count }} tourist{{ assistance_request.tourist_count|pluralize }} &middot; <span class="price">Rs {{ assistance_request.package_amount }}</span></p>
+              <small class="muted">{{ assistance_request.details|default:"No additional details." }}</small>
+              {% if assistance_request.accepted_by %}<p class="muted">Guide: {{ assistance_request.accepted_by.username }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>You have not requested guide assistance yet.</p>
+      {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

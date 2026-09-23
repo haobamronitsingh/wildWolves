@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title|default:"Tourist Registration" }}</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        color: #1f2937;
+        background: #eff6ff;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 1rem;
+      }
+      .card {
+        width: min(100%, 30rem);
+        padding: 2rem;
+        background: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 0.5rem 2rem rgb(30 64 175 / 12%);
+      }
+      h1 {
+        margin-top: 0;
+        color: #1e3a8a;
+      }
+      .intro {
+        color: #64748b;
+      }
+      .field {
+        margin: 1rem 0;
+      }
+      label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-weight: 600;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.7rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.35rem;
+        font: inherit;
+      }
+      .help {
+        color: #64748b;
+        font-size: 0.85rem;
+      }
+      .errors {
+        color: #b91c1c;
+        font-size: 0.9rem;
+      }
+      button {
+        width: 100%;
+        padding: 0.75rem;
+        border: 0;
+        border-radius: 0.35rem;
+        color: #fff;
+        background: #2563eb;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      a {
+        color: #1d4ed8;
+        font-weight: 600;
+      }
+      .footer {
+        text-align: center;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Join as a tourist</h1>
+      <p class="intro">
+        Create an account to discover and plan local experiences.
+      </p>
+      {% if form.non_field_errors %}
+      <div class="errors" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <form method="post">
+        {% csrf_token %} {% for field in form %}
+        <div class="field">
+          {{ field.label_tag }}{{ field }}{% if field.help_text %}<small
+            class="help"
+            >{{ field.help_text }}</small
+          >{% endif %}{% if field.errors %}
+          <ul class="errors" role="alert">
+            {% for error in field.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit">Create tourist account</button>
+      </form>
+      <p class="footer">
+        Already registered? <a href="{% url 'tourist:login' %}">Sign in</a>
+      </p>
+    </main>
+  </body>
+</html>

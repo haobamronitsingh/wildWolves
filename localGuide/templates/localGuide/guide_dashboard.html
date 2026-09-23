@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172033; background: #f4f7fb; }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { width: min(100% - 2rem, 68rem); margin: 0 auto; padding: 1.25rem 0 2rem; }
+      .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
+      h1, h2 { color: #123b6d; }
+      h1 { margin: 0; font-size: clamp(1.65rem, 5vw, 2.35rem); }
+      h2 { margin: 0 0 1rem; font-size: 1.2rem; }
+      .intro, .muted { color: #64748b; }
+      .card { margin-bottom: 1rem; padding: 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 .35rem 1.2rem rgb(15 23 42 / 5%); }
+      .field { margin-bottom: 1rem; }
+      label { display: block; margin-bottom: .4rem; font-weight: 700; }
+      input { width: 100%; padding: .75rem; border: 1px solid #cbd5e1; border-radius: .55rem; font: inherit; }
+      input:focus { outline: 3px solid #bfdbfe; border-color: #2563eb; }
+      button { width: 100%; min-height: 2.9rem; padding: .7rem 1rem; border: 0; border-radius: .55rem; color: #fff; background: #2563eb; font: inherit; font-weight: 700; cursor: pointer; }
+      button:hover { background: #1d4ed8; }
+      .request-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+      .request { padding: 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; }
+      .request-title { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-weight: 700; }
+      .price { color: #166534; font-weight: 800; }
+      .empty { color: #64748b; }
+      .countdown { margin: .75rem 0; padding: .65rem .8rem; border-radius: .5rem; color: #075985; background: #e0f2fe; font-weight: 800; }
+      .countdown.expired { color: #991b1b; background: #fee2e2; }
+      @media (min-width: 44rem) { main { padding-top: 2.5rem; } .card { padding: 1.5rem; } button { width: auto; } }
+      @media (max-width: 35rem) { .topbar { flex-direction: column; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div><h1>Local guide dashboard</h1><p class="intro">Review tourist requests in your service area.</p></div>
+      </header>
+      <section class="card">
+      <h2>Your availability</h2>
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="field">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<small>{{ error }}</small>{% endfor %}</div>
+        {% endfor %}
+        <button type="submit">Save availability</button>
+      </form>
+      </section>
+      <section class="card">
+      <h2>Open requests</h2>
+      {% if open_requests %}
+        <ul class="request-list">
+          {% for assistance_request in open_requests %}
+            <li class="request">
+              <div class="request-title"><span>{{ assistance_request.area }}</span><span>{{ assistance_request.tourist_count }} tourist{{ assistance_request.tourist_count|pluralize }}</span></div>
+              <p>{{ assistance_request.package_label }} &middot; <span class="price">Rs {{ assistance_request.package_amount }}</span></p>
+              <p class="muted">{{ assistance_request.details|default:"No additional details." }}</p>
+              {% if form.instance.is_available %}
+                <form method="post" action="{% url 'localGuide:accept_request' assistance_request.id %}">
+                  {% csrf_token %}<button type="submit">Accept request</button>
+                </form>
+              {% else %}
+                <small>Set yourself as available to accept a request.</small>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">No open requests match your service area.</p>
+      {% endif %}
+      </section>
+
+      <section class="card">
+      <h2>Accepted request</h2>
+      {% for assistance_request in accepted_requests %}
+          <article>
+            <div class="request-title"><strong>{{ assistance_request.area }}</strong><span class="price">{{ assistance_request.package_label }} &middot; Rs {{ assistance_request.package_amount }}</span></div>
+            <p class="muted">{{ assistance_request.details|default:"No additional details." }}</p>
+            <p
+              class="countdown"
+              data-accepted-at="{{ assistance_request.accepted_at|date:'c' }}"
+              data-hours="{{ assistance_request.package_hours }}"
+              aria-live="polite"
+            >Calculating remaining guide time...</p>
+            <form method="post" action="{% url 'localGuide:complete_request' assistance_request.id %}">
+              {% csrf_token %}
+              <button type="submit">Complete guide service</button>
+            </form>
+          </article>
+      {% empty %}
+        <p>You have no accepted requests.</p>
+      {% endfor %}
+      </section>
+    </main>
+    <script>
+      (() => {
+        const countdowns = document.querySelectorAll("[data-accepted-at]");
+
+        const updateCountdowns = () => {
+          const now = Date.now();
+          countdowns.forEach((countdown) => {
+            const acceptedAt = new Date(countdown.dataset.acceptedAt).getTime();
+            const duration = Number(countdown.dataset.hours) * 60 * 60 * 1000;
+            const remaining = Math.max(0, acceptedAt + duration - now);
+            const totalSeconds = Math.floor(remaining / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            if (remaining === 0) {
+              countdown.textContent = "Guide time is over. Complete this request.";
+              countdown.classList.add("expired");
+              return;
+            }
+
+            countdown.textContent = `Time remaining: ${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+          });
+        };
+
+        updateCountdowns();
+        if (countdowns.length) {
+          window.setInterval(updateCountdowns, 1000);
+        }
+      })();
+    </script>
+  </body>
+</html>
