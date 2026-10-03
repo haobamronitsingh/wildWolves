@@ -1,5 +1,7 @@
 # WildWolves
 
+# First Hackathon project based on tourism
+
 WildWolves is a Django tourism web application focused on discovering places
 in Manipur and connecting tourists with local guides and transport options.
 It uses Django templates for its interface and SQLite for local development.
