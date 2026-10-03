@@ -37,11 +37,49 @@ def get_trending_places(places):
     return result
 
 
+def get_trending_cafes(spot_name, cafes):
+    """Rank cafes near a selected spot using the same YouTube engagement model."""
+    fallback = [dict(cafe) for cafe in cafes]
+    if not settings.YOUTUBE_API_KEY:
+        return _with_source(fallback, "curated")
+
+    cache_key = f"wildwolves:youtube:cafes:{spot_name.lower().replace(' ', '-')}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        enriched = [
+            _youtube_metrics_for_query(
+                cafe,
+                f"{cafe['name']} near {spot_name} Manipur cafe",
+            )
+            for cafe in cafes
+        ]
+    except requests.RequestException as exc:
+        logger.warning("YouTube cafe recommendation request failed: %s", exc)
+        return _with_source(fallback, "curated")
+    except (KeyError, TypeError, ValueError) as exc:
+        logger.warning("YouTube cafe response was invalid: %s", exc)
+        return _with_source(fallback, "curated")
+
+    result = _with_source(_rank(enriched), "youtube")
+    cache.set(cache_key, result, settings.YOUTUBE_RECOMMENDATION_CACHE_SECONDS)
+    return result
+
+
 def _youtube_metrics(place):
+    return _youtube_metrics_for_query(
+        place,
+        f"{place['name']} Manipur tourism",
+    )
+
+
+def _youtube_metrics_for_query(place, query):
     params = {
         "key": settings.YOUTUBE_API_KEY,
         "part": "snippet",
-        "q": f"{place['name']} Manipur tourism",
+        "q": query,
         "type": "video",
         "order": "relevance",
         "maxResults": 5,
@@ -82,13 +120,6 @@ def _youtube_metrics(place):
         metrics["total_likes"] += int(statistics.get("likeCount", 0))
         metrics["total_comments"] += int(statistics.get("commentCount", 0))
 
-    if stats_data.get("items"):
-        thumbnail = stats_data["items"][0].get("snippet", {}).get("thumbnails", {})
-        metrics["image"] = (
-            thumbnail.get("high", {}).get("url")
-            or thumbnail.get("medium", {}).get("url")
-            or place["image"]
-        )
     return metrics
 
 

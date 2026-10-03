@@ -1,0 +1,466 @@
+WILDWOLVES TOURISM PLATFORM
+TECHNICAL OVERVIEW
+====================
+
+1. PROJECT OBJECTIVE
+--------------------
+WildWolves is a Django-based tourism platform for discovering popular
+tourist destinations in Manipur and connecting tourists with local guides.
+
+The platform provides:
+- Trending destination recommendations
+- YouTube-based popularity ranking
+- Nearby cafe recommendations
+- Tourist registration and dashboard
+- Local guide registration and dashboard
+- Tourist assistance requests
+- Image-based destination presentation
+
+
+2. TECHNOLOGY STACK
+-------------------
+- Frontend: HTML5, CSS3, Django Templates
+- Backend: Python and Django
+- Database: SQLite
+- Authentication: Django Authentication Framework
+- Recommendation API: YouTube Data API v3
+- HTTP Client: Python Requests
+- Environment Configuration: .env and python-dotenv
+- Caching: Django Cache Framework
+- Image Storage: Django Static Files
+- Deployment: Django Development Server over LAN
+
+
+3. SYSTEM ARCHITECTURE
+----------------------
+User Browser
+     |
+     v
+Django URL Router
+     |
+     +----------------------+
+     |                      |
+     v                      v
+Homepage              Authentication
+     |                      |
+     v                      +----------------------+
+Recommendation Service       |                      |
+     |                       v                      v
+     v                Tourist Module        Local Guide Module
+YouTube Data API            |                      |
+     |                       v                      v
+     v                Tourist Dashboard     Guide Dashboard
+Destination Ranking          |
+                             v
+                    Assistance Request System
+
+
+4. HOMEPAGE
+-----------
+File:
+wildWolves/templates/home.html
+
+The homepage provides:
+- WildWolves branding
+- Hero section with Manipur background image
+- Featured trending destination
+- Destination popularity score
+- Tourist destination cards
+- Cafe recommendation links
+- Login and registration buttons
+- Responsive desktop and mobile layout
+
+Route:
+/
+
+Homepage controller:
+wildWolves/views.py
+
+
+5. DESTINATION RECOMMENDATION SYSTEM
+------------------------------------
+Service file:
+wildWolves/services/youtube.py
+
+For each destination, the system:
+1. Searches YouTube using the destination name and tourism keywords.
+2. Retrieves relevant videos.
+3. Collects video statistics.
+4. Calculates an engagement score.
+5. Normalizes the result between 0 and 100.
+6. Sorts destinations by popularity.
+7. Displays the highest-ranked destination as trending.
+
+Example search:
+Loktak Lake Manipur tourism
+
+
+6. RECOMMENDATION SCORING MODEL
+-------------------------------
+The recommendation model uses:
+- Video views
+- Video likes
+- Video comments
+
+Engagement Value:
+Views + (Likes x 10) + (Comments x 3)
+
+Raw Score:
+log10(1 + Engagement Value)
+
+Final Popularity Score:
+Destination Raw Score / Highest Raw Score x 100
+
+The logarithmic transformation prevents one viral video from unfairly
+dominating every ranking.
+
+
+7. YOUTUBE API CONFIGURATION
+----------------------------
+The YouTube API key is loaded from:
+
+D:\wildWolves\.env
+
+Example:
+
+YOUTUBE_API_KEY=your_api_key
+YOUTUBE_RECOMMENDATION_CACHE_SECONDS=900
+
+The environment configuration is loaded in:
+
+wildWolves/settings.py
+
+The API key is not hard-coded in the application source.
+
+
+8. CACHING STRATEGY
+-------------------
+Recommendation results are cached for 15 minutes by default.
+
+Caching provides:
+- Lower YouTube API quota usage
+- Faster page responses
+- Reduced network traffic
+- Better performance during demonstrations
+- Fewer repeated API calls
+
+Separate cache keys are used for:
+- Trending tourist destinations
+- Cafe recommendations for each destination
+
+
+9. FALLBACK RECOMMENDATIONS
+---------------------------
+The application remains functional if:
+- The YouTube API key is missing
+- The API quota is exceeded
+- YouTube is temporarily unavailable
+- A network request fails
+- The API response is invalid
+
+In these cases, the system uses curated destination and cafe data.
+The homepage and cafe recommendation page continue to work normally.
+
+
+10. IMAGE-BASED DESTINATION PRESENTATION
+----------------------------------------
+Static assets are stored in:
+
+wildWolves/static/wildwolves/images/
+
+Current images:
+- background.jpg: Homepage hero background
+- loktak-lake.jpg: Loktak Lake destination
+- kangla-fort.jpg: Kangla Fort destination
+- shirui-lily.jpg: Shirui Hills destination
+
+The images are locally stored and are not replaced by YouTube thumbnails.
+YouTube is used for ranking, while the project images are used for display.
+
+
+11. CAFE RECOMMENDATION SYSTEM
+------------------------------
+Template:
+wildWolves/templates/cafe_recommendations.html
+
+Route:
+/cafes/
+
+Example:
+/cafes/?spot=Kangla%20Fort
+
+Cafe recommendation flow:
+1. Tourist selects a destination.
+2. System identifies cafes near that destination.
+3. YouTube searches cafe-related videos.
+4. Views, likes, and comments are collected.
+5. Cafes are ranked by popularity.
+6. Trending cafes are displayed.
+
+Example search:
+Cafe Name near Kangla Fort Manipur cafe
+
+The same recommendation scoring model is used for destinations and cafes.
+
+
+12. TOURIST AND LOCAL GUIDE ROLES
+---------------------------------
+Tourists can:
+- Register
+- Log in
+- View their dashboard
+- Browse destinations
+- View cafe recommendations
+- Request local guide assistance
+- Track assistance request status
+
+Local guides can:
+- Register
+- Create a profile
+- Add their service area
+
+
+13. TRANSPORTATION MODULE
+-------------------------
+The integrated transport app provides a single travel-support area at:
+
+/transport/
+
+Available features:
+- Ride sharing between travelers going to the same destination
+- Optional location presence and nearby-traveler filtering
+- Accept/decline ride invitations
+- Local bus and auto-rickshaw route directory
+- Staff-managed route publishing
+- Two-wheeler and four-wheeler rental listings
+- Rental inquiry submission with trip duration and notes
+
+Transport routes:
+- /transport/ride/
+- /transport/local/
+- /transport/private/
+
+The transport app has its own UserProfile model for phone contact details.
+Its reverse relation is named transport_profile so it can coexist with the
+existing local-guide profile model. Profile records are created automatically
+when a Django user is created.
+
+Transport configuration is controlled through settings/environment values:
+- NEARBY_RADIUS_METERS (default 5000)
+- DESTINATION_MATCH_METERS (default 10000)
+- PRESENCE_STALE_SECONDS (default 3600)
+
+Sample Manipur routes and rental vehicles can be loaded with:
+
+python manage.py seed_transport
+
+
+14. REQUEST FLOW
+----------------
+1. A visitor opens the homepage and sees the current ranked destination.
+2. Selecting a destination opens its cafe recommendation page.
+3. The tourist can continue to the Tourist dashboard for local-guide help.
+4. The homepage or dashboard can open the Transport area.
+5. The tourist chooses ride sharing, local routes, or private rentals.
+6. Ride sharing stores only the destination and optional coordinates supplied
+   by the authenticated user, then filters stale or distant sessions.
+7. Rental requests are stored for follow-up by the transport operator.
+- Set availability
+- View open tourist requests
+- Accept requests
+- Complete assistance requests
+
+
+13. TOURIST-TO-GUIDE WORKFLOW
+-----------------------------
+Tourist selects a destination
+        |
+        v
+Tourist views nearby cafe recommendations
+        |
+        v
+Tourist selects "Request a local guide"
+        |
+        v
+Tourist logs in or registers
+        |
+        v
+Tourist dashboard opens
+        |
+        v
+Selected destination area is pre-filled
+        |
+        v
+Tourist submits assistance request
+        |
+        v
+Available guide views the request
+        |
+        v
+Guide accepts the request
+        |
+        v
+Request becomes Accepted
+        |
+        v
+Guide completes the request
+        |
+        v
+Request becomes Completed
+
+
+14. DATABASE DESIGN
+-------------------
+The project uses SQLite during development.
+
+Django User:
+- Username
+- Password
+- Email
+- Authentication status
+
+TouristProfile:
+- Tourist account
+- Phone number
+- Registration date
+
+Local Guide UserProfile:
+- Phone number
+- Biography
+- Profile picture
+- Known language
+- Occupation
+- Birth date
+- Service area
+- Availability
+
+AssistanceRequest:
+- Tourist
+- Requested area
+- Number of tourists
+- Package duration
+- Package amount
+- Request details
+- Request status
+- Assigned local guide
+- Creation and completion timestamps
+
+
+15. URL STRUCTURE
+-----------------
+/                         WildWolves homepage
+/login/                   Login role selection
+/register/                Registration role selection
+/cafes/                   Cafe recommendations
+/cafes/?spot=...          Cafes near a selected destination
+/tourist/loginTourist/    Tourist login
+/tourist/registerTourist/ Tourist registration
+/tourist/                 Tourist dashboard
+/guide/                   Local guide registration
+/guide/login/             Local guide login
+/guide/guide/             Local guide dashboard
+/admin/                   Django administration
+
+
+16. SECURITY APPROACH
+---------------------
+The platform uses:
+- CSRF protection
+- Password hashing
+- Session-based authentication
+- Server-side form validation
+- Login-required decorators
+- Safe redirect validation
+- Environment-based API key storage
+- Protected tourist and guide dashboards
+- API failure handling
+- No API credentials in templates
+
+
+17. RESPONSIVE DESIGN
+---------------------
+The interface supports:
+- Desktop computers
+- Tablets
+- Mobile devices
+- Devices connected through the local network
+
+Responsive features include:
+- Flexible grid layouts
+- Mobile navigation
+- Responsive destination cards
+- Mobile-friendly role selection
+- Responsive cafe cards
+- Scalable typography and images
+
+
+18. VALIDATION
+--------------
+Validated features:
+- Django system checks
+- Homepage request
+- Cafe page request
+- Tourist dashboard request
+- Login and registration routes
+- YouTube recommendation mock ranking
+- Fallback recommendation mode
+- Static image rendering
+
+Verified behavior:
+- Homepage: HTTP 200
+
+
+19. ACCESS FROM A MOBILE HOTSPOT
+--------------------------------
+To access the development server from another device connected to the same
+mobile hotspot:
+
+1. Connect the development computer and the other device to the same hotspot.
+2. Run `run_network.bat` from the project directory.
+3. Open the URL printed by the script on the other device. It uses the
+   computer's active hotspot/LAN IPv4 address and port 8000.
+4. If Windows Firewall prompts for access, allow Python on private networks.
+
+The launcher binds Django to `0.0.0.0:8000`, which makes it listen on the
+computer's network interfaces instead of only on localhost. The URL printed
+by the launcher is the address other devices must use; `localhost` and
+`127.0.0.1` refer to the device where the browser is running.
+
+
+20. TOURIST SOS ALERTS
+----------------------
+Authenticated tourists can use the SOS button on the tourist dashboard.
+The browser requests GPS permission and sends validated latitude and longitude
+to the server. Each alert is stored for review and the available local guides
+with phone numbers are selected as intended recipients.
+
+Actual SMS delivery requires an SMS provider integration. Until one is
+configured, the application logs the intended recipients and coordinates
+instead of claiming that a message was sent.
+- Cafe page: HTTP 200
+- Tourist dashboard redirect: Working
+- YouTube ranking: Working
+- Fallback mode: Working
+- Provided images: Rendering correctly
+
+
+19. FUTURE SCOPE
+----------------
+- Personalized recommendations
+- Google Maps integration
+- Real-time cafe availability
+- Tourist reviews and ratings
+- Online guide booking
+- Weather-based recommendations
+- Payment integration
+- PostgreSQL production database
+- Cloud deployment
+- Mobile application version
+
+
+20. PROJECT VALUE
+-----------------
+WildWolves combines live YouTube popularity data, destination
+recommendations, cafe discovery, and local guide assistance into one
+tourism platform. It helps visitors explore Manipur intelligently while
+supporting local guides and local tourism businesses.

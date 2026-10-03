@@ -21,6 +21,12 @@
       input:focus { outline: 3px solid #bfdbfe; border-color: #2563eb; }
       button { width: 100%; min-height: 2.9rem; padding: .7rem 1rem; border: 0; border-radius: .55rem; color: #fff; background: #2563eb; font: inherit; font-weight: 700; cursor: pointer; }
       button:hover { background: #1d4ed8; }
+      .topbar-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
+      .home-link, .logout { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 2.5rem; padding: .55rem .9rem; border-radius: .55rem; font-weight: 700; text-decoration: none; }
+      .home-link { color: #1e40af; background: #dbeafe; }
+      .home-link:hover { background: #bfdbfe; }
+      .logout { border: 0; color: #334155; background: #e2e8f0; font: inherit; cursor: pointer; }
+      .logout:hover { background: #cbd5e1; }
       .request-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
       .request { padding: 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; }
       .request-title { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-weight: 700; }
@@ -29,13 +35,19 @@
       .countdown { margin: .75rem 0; padding: .65rem .8rem; border-radius: .5rem; color: #075985; background: #e0f2fe; font-weight: 800; }
       .countdown.expired { color: #991b1b; background: #fee2e2; }
       @media (min-width: 44rem) { main { padding-top: 2.5rem; } .card { padding: 1.5rem; } button { width: auto; } }
-      @media (max-width: 35rem) { .topbar { flex-direction: column; } }
+      @media (max-width: 35rem) { .topbar { flex-direction: column; } .topbar-actions { width: 100%; justify-content: stretch; } .home-link, .logout { flex: 1; } }
     </style>
   </head>
   <body>
     <main>
       <header class="topbar">
         <div><h1>Local guide dashboard</h1><p class="intro">Review tourist requests in your service area.</p></div>
+        <div class="topbar-actions">
+          <a class="home-link" href="{% url 'home' %}">Home</a>
+          <form method="post" action="{% url 'localGuide:logout' %}">
+            {% csrf_token %}<button class="logout" type="submit">Log out</button>
+          </form>
+        </div>
       </header>
       <section class="card">
       <h2>Your availability</h2>

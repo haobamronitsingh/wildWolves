@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Transport · WildWolves{% endblock %}</title>
+  <style>
+    :root{--ink:#17231f;--muted:#66756e;--cream:#f5f1e8;--green:#173f3b;--gold:#d7a34c;--line:#d9d8cb}
+    *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 "Segoe UI",sans-serif}a{color:inherit}.wrap{width:min(1120px,calc(100% - 48px));margin:auto}
+    header{background:var(--green);color:#fff;padding:20px 0}.nav{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}.nav-links{display:flex;gap:10px;flex-wrap:wrap}.nav-links a{padding:8px 12px;text-decoration:none;border-radius:999px;font-size:.9rem}.nav-links a:hover,.nav-links a.active{background:rgb(255 255 255/.14)}
+    main{padding:36px 0 70px}.eyebrow{color:var(--gold);text-transform:uppercase;letter-spacing:.15em;font-size:.75rem;font-weight:700}h1,h2,h3{font-family:Georgia,serif;font-weight:500;line-height:1.1}.lead{color:var(--muted);max-width:65ch}.feature-bar{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 28px}.feature-bar a{background:#fff;border:1px solid var(--line);padding:10px 14px;text-decoration:none;font-weight:700;border-radius:4px}.feature-bar a.active{background:var(--green);color:#fff}
+    .panel{background:#fff;border:1px solid var(--line);padding:22px;margin-bottom:20px}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}.field,input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);font:inherit;margin:6px 0 14px}label{font-size:.85rem;font-weight:700;color:var(--green)}button,.button{display:inline-block;border:0;border-radius:999px;background:var(--gold);color:#fff;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none}.muted{color:var(--muted)}.errorlist{color:#9a2d21}.item{border-top:1px solid var(--line);padding:15px 0}.tag{display:inline-block;border:1px solid var(--line);padding:2px 8px;margin-right:5px;color:var(--green);font-size:.78rem;font-weight:700}.route-line{display:flex;flex-wrap:wrap;gap:6px;color:var(--muted);font-size:.9rem}.route-line span:not(:last-child)::after{content:" → ";color:var(--gold)}.messages{list-style:none;padding:0}.messages li{background:#fff;border:1px solid var(--gold);padding:10px;margin-bottom:8px}footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:.85rem}
+    @media(max-width:760px){.wrap{width:min(100% - 32px,1120px)}.grid-2{grid-template-columns:1fr}.nav{align-items:flex-start;flex-direction:column}}
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<header><div class="wrap nav"><a class="brand" href="{% url 'home' %}">WildWolves</a><nav class="nav-links"><a href="{% url 'transport:ride' %}">Ride share</a><a href="{% url 'transport:local' %}">Local routes</a><a href="{% url 'transport:private' %}">Rent a vehicle</a>{% if user.is_authenticated %}<a href="{% url 'transport:logout' %}">Log out</a>{% else %}<a href="{% url 'transport:login' %}">Log in</a>{% endif %}</nav></div></header>
+{% if messages %}<div class="wrap"><ul class="messages">{% for message in messages %}<li>{{ message }}</li>{% endfor %}</ul></div>{% endif %}
+{% block content %}{% endblock %}
+<footer><div class="wrap">WildWolves · Explore thoughtfully, travel locally.</div></footer>
+</body></html>

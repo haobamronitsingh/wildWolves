@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cafes near {{ spot.name }} · WildWolves</title>
+  <style>
+    :root{--ink:#17231f;--muted:#66756e;--cream:#f5f1e8;--green:#173f3b;--gold:#d7a34c;--line:#d9d8cb}
+    *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 "Segoe UI",sans-serif}a{color:inherit}
+    .wrap{width:min(1120px,calc(100% - 48px));margin:auto}header{background:var(--green);color:#fff;padding:20px 0}.nav{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}.nav-links{display:flex;gap:12px;align-items:center}.nav-links a{text-decoration:none;padding:8px 13px;border-radius:999px}.nav-links a.active,.nav-links a:hover{background:rgb(255 255 255/.14)}
+    .intro{padding:58px 0 34px}.eyebrow{color:var(--gold);font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase}.intro h1{font:500 clamp(2.4rem,6vw,4.5rem)/1.02 Georgia,serif;margin:12px 0}.intro p{color:var(--muted);max-width:60ch}.spot-picker{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:24px}.spot-picker a{border:1px solid var(--line);padding:8px 13px;text-decoration:none;font-size:.88rem}.spot-picker a.active{border-color:var(--gold);background:#fff}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding-bottom:65px}.card{background:#fff;border:1px solid var(--line);overflow:hidden}.card img{display:block;width:100%;height:175px;object-fit:cover}.card-body{padding:20px}.rank{color:var(--gold);font:1.4rem Georgia,serif}.card h2{font:500 1.55rem Georgia,serif;margin:10px 0 5px}.meta,.description{color:var(--muted);font-size:.9rem}.description{min-height:48px}.score{color:var(--green);font-weight:800}.source{color:var(--muted);font-size:.76rem;display:block;margin-top:8px}
+    .empty{background:#fff;border:1px solid var(--line);padding:24px;margin-bottom:65px;color:var(--muted)}.guide-cta{background:var(--green);color:#fff;padding:28px;margin:0 0 65px}.guide-cta h2{font:500 1.7rem Georgia,serif;margin:0 0 8px}.guide-cta p{color:#d7e0d9;max-width:60ch}.guide-cta a{display:inline-block;background:var(--gold);border-radius:999px;padding:10px 16px;text-decoration:none;font-weight:700}footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:.85rem}
+    @media(max-width:760px){.wrap{width:min(100% - 32px,1120px)}.cards{grid-template-columns:1fr}.nav-links a:first-child{display:none}}
+  </style>
+</head>
+<body>
+  <header><div class="wrap nav"><a class="brand" href="{% url 'home' %}">WildWolves</a><nav class="nav-links"><a class="active" href="{% url 'cafe_recommendations' %}?spot={{ spot.name|urlencode }}">Cafe recommendations</a>{% if user.is_authenticated %}<a href="{% url 'tourist:dashboard' %}?area={{ spot.location|urlencode }}">Local guide dashboard</a>{% else %}<a href="{% url 'tourist:login' %}?next=/tourist/?area={{ spot.location|urlencode }}">Find a local guide</a>{% endif %}</nav></div></header>
+  <main class="wrap">
+    <section class="intro"><p class="eyebrow">After the sightseeing</p><h1>Trending cafes near {{ spot.name }}</h1><p>Choose a destination to discover cafes and food stops nearby. Rankings use YouTube views, likes, and comments when the API is available.</p><div class="spot-picker">{% for place in available_spots %}<a class="{% if place.name == spot.name %}active{% endif %}" href="{% url 'cafe_recommendations' %}?spot={{ place.name|urlencode }}">{{ place.name }}</a>{% endfor %}</div></section>
+    {% if cafes %}<section class="cards">{% for cafe in cafes %}<article class="card"><img src="{% static cafe.image %}" alt="{{ cafe.name }}"><div class="card-body"><span class="rank">0{{ forloop.counter }}</span><h2>{{ cafe.name }}</h2><div class="meta">{{ cafe.location }}</div><p class="description">{{ cafe.description }}</p><span class="score">{{ cafe.score }} / 100 popularity</span>{% if cafe.recommendation_source == "youtube" %}<small class="source">Ranked using live YouTube engagement</small>{% else %}<small class="source">Curated local suggestion</small>{% endif %}</div></article>{% endfor %}</section>{% else %}<div class="empty">Cafe recommendations for this destination are being prepared. Try another destination or connect with a local guide for suggestions.</div>{% endif %}
+    <section class="guide-cta"><h2>Want help exploring {{ spot.name }}?</h2><p>Open your tourist dashboard to request an available local guide. Your destination area will be pre-filled for you.</p>{% if user.is_authenticated %}<a href="{% url 'tourist:dashboard' %}?area={{ spot.location|urlencode }}">Request a local guide</a>{% else %}<a href="{% url 'tourist:login' %}?next=/tourist/?area={{ spot.location|urlencode }}">Log in to request a guide</a>{% endif %}</section>
+  </main>
+  <footer><div class="wrap">WildWolves · <a href="{% url 'home' %}">Back to destinations</a> · <a href="{% url 'tourist:dashboard' %}">Tourist dashboard</a></div></footer>
+</body>
+</html>

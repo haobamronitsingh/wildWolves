@@ -1,5 +1,6 @@
 from django.shortcuts import redirect, render
 from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -47,6 +48,12 @@ def login(request):
         'form': form,
         'next': next_url,
     })
+
+
+def logout(request):
+    if request.method == 'POST':
+        auth_logout(request)
+    return redirect('localGuide:login')
 
 
 @login_required(login_url='localGuide:login')

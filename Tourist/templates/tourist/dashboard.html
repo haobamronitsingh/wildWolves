@@ -26,7 +26,16 @@
       input:focus, select:focus, textarea:focus { outline: 3px solid #bfdbfe; border-color: #2563eb; }
       button { width: 100%; min-height: 2.9rem; padding: .7rem 1rem; border: 0; border-radius: .55rem; color: #fff; background: #2563eb; font: inherit; font-weight: 700; cursor: pointer; }
       button:hover { background: #1d4ed8; }
-      .logout { width: auto; min-height: 2.5rem; padding: .55rem .9rem; background: #e2e8f0; color: #334155; }
+      .topbar-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; }
+      .home-link, .logout { display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 2.5rem; padding: .55rem .9rem; border-radius: .55rem; font-weight: 700; text-decoration: none; }
+      .home-link { color: #1e40af; background: #dbeafe; }
+      .home-link:hover { background: #bfdbfe; }
+      .sos-card { border-color: #fecaca; background: #fff7f7; }
+      .sos-card h2 { color: #991b1b; }
+      .sos-button { background: #dc2626; }
+      .sos-button:hover { background: #b91c1c; }
+      .sos-status { margin: .75rem 0 0; color: #991b1b; }
+      .logout { border: 0; background: #e2e8f0; color: #334155; }
       .logout:hover { background: #cbd5e1; }
       .request-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
       .request { padding: 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; }
@@ -42,7 +51,8 @@
       }
       @media (max-width: 35rem) {
         .topbar { flex-direction: column; }
-        .logout { width: 100%; }
+        .topbar-actions { width: 100%; justify-content: stretch; }
+        .home-link, .logout { flex: 1; }
       }
     </style>
   </head>
@@ -52,10 +62,14 @@
         <div>
           <h1>Welcome, {{ request.user.username }}</h1>
           <p class="intro">Tell available local guides where you need assistance.</p>
+          <p><a href="{% url 'cafe_recommendations' %}{% if selected_area %}?spot={{ selected_area|urlencode }}{% endif %}">Browse trending cafes</a></p>
         </div>
-        <form method="post" action="{% url 'tourist:logout' %}">
-          {% csrf_token %}<button class="logout" type="submit">Log out</button>
-        </form>
+        <div class="topbar-actions">
+          <a class="home-link" href="{% url 'home' %}">Home</a>
+          <form method="post" action="{% url 'tourist:logout' %}">
+            {% csrf_token %}<button class="logout" type="submit">Log out</button>
+          </form>
+        </div>
       </header>
       <section class="card">
       <h2>Request guide assistance</h2>
@@ -66,6 +80,12 @@
         {% endfor %}
         <button type="submit">Find a local guide</button>
       </form>
+      </section>
+      <section class="card sos-card">
+      <h2>Emergency SOS</h2>
+      <p>Share your current GPS location with available local guides. SMS delivery becomes active after an SMS provider is configured.</p>
+      <button class="sos-button" id="sos-button" type="button">Send SOS alert</button>
+      <p class="sos-status" id="sos-status" role="status" aria-live="polite"></p>
       </section>
       <section class="card">
       <h2>Your requests</h2>
@@ -85,5 +105,44 @@
       {% endif %}
       </section>
     </main>
+    <script>
+      (() => {
+        const button = document.getElementById("sos-button");
+        const status = document.getElementById("sos-status");
+        const csrfToken = document.cookie.split("; ").find((row) => row.startsWith("csrftoken="))?.split("=")[1];
+
+        button.addEventListener("click", () => {
+          if (!navigator.geolocation) {
+            status.textContent = "This browser does not support GPS location.";
+            return;
+          }
+          if (!window.confirm("Send an SOS alert with your current location?")) return;
+          button.disabled = true;
+          status.textContent = "Getting your location...";
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            const body = new URLSearchParams({
+              latitude: String(position.coords.latitude),
+              longitude: String(position.coords.longitude),
+            });
+            try {
+              const response = await fetch("{% url 'tourist:sos' %}", {
+                method: "POST",
+                headers: {"X-CSRFToken": csrfToken, "Content-Type": "application/x-www-form-urlencoded"},
+                body,
+              });
+              const data = await response.json();
+              status.textContent = data.message || data.error || "Unable to send the SOS alert.";
+            } catch (error) {
+              status.textContent = "Unable to contact the server. Try again.";
+            } finally {
+              button.disabled = false;
+            }
+          }, () => {
+            status.textContent = "Location permission is required to send an SOS alert.";
+            button.disabled = false;
+          }, {enableHighAccuracy: true, timeout: 10000});
+        });
+      })();
+    </script>
   </body>
 </html>

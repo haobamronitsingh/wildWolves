@@ -23,14 +23,19 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-c0cupp(r=))%g^$p_z90o+!!&(p$6%*^hi)s6(=fkt-zga$peq'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("DJANGO_SECRET_KEY must be set in the environment")
 YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '').strip()
 YOUTUBE_RECOMMENDATION_CACHE_SECONDS = int(
     os.environ.get('YOUTUBE_RECOMMENDATION_CACHE_SECONDS', '900')
 )
+NEARBY_RADIUS_METERS = int(os.environ.get('NEARBY_RADIUS_METERS', '5000'))
+DESTINATION_MATCH_METERS = int(os.environ.get('DESTINATION_MATCH_METERS', '10000'))
+PRESENCE_STALE_SECONDS = int(os.environ.get('PRESENCE_STALE_SECONDS', '3600'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 # Allow the development server to accept requests sent to the machine's LAN
 # address. Set ALLOWED_HOSTS to a comma-separated list for a restricted setup.
@@ -52,6 +57,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'localGuide',
     'Tourist',
+    'transport.apps.TransportConfig',
 ]
 
 MIDDLEWARE = [
@@ -130,6 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'wildWolves' / 'static']
 
 # These are useful when the app is opened from another device during local
 # development. Set PUBLIC_ORIGIN when using a public tunnel or deployment.
@@ -138,6 +145,10 @@ CSRF_TRUSTED_ORIGINS = [PUBLIC_ORIGIN] if PUBLIC_ORIGIN else []
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+LOGIN_URL = 'tourist:login'
+LOGIN_REDIRECT_URL = 'transport:hub'
+LOGOUT_REDIRECT_URL = 'home'
 
 
 # Email

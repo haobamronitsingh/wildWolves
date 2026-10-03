@@ -1,0 +1,84 @@
+{% extends "transport/base.html" %}
+{% block title %}Ride share · WildWolves{% endblock %}
+{% block content %}
+<main class="wrap"><p class="eyebrow">Travel together</p><h1>Ride share nearby</h1><p class="lead">Share your destination and location to discover opted-in travelers heading the same way within {{ radius }} metres.</p>
+{% include "transport/feature_bar.html" %}
+<section class="grid-2"><div class="panel"><h2>Share your trip</h2><form id="presence-form">{% csrf_token %}<label for="destination">Destination</label><input id="destination" required value="{{ session.destination|default:'' }}" placeholder="For example, Loktak Lake"><label><input id="open-to-share" type="checkbox" {% if session.open_to_share %}checked{% endif %}> I am open to sharing a ride</label><button type="submit">Update my presence</button><p id="presence-message" class="muted"></p></form></div><div class="panel"><h2>Nearby travelers</h2><p id="nearby-message" class="muted">Share your location to find travelers.</p><div id="people"></div></div></section>
+<section class="panel"><h2>Incoming invites</h2>{% for invite in incoming %}<div class="item"><b>{{ invite.from_user.username }}</b> is also going to {{ invite.destination }}. <button class="respond" data-id="{{ invite.id }}" data-answer="yes">Accept</button> <button class="respond" data-id="{{ invite.id }}" data-answer="no">Decline</button></div>{% empty %}<p class="muted">No pending ride invites.</p>{% endfor %}</section>
+</main>
+{% endblock %}
+{% block extra_head %}<script>
+const csrfToken = () => document.querySelector('#presence-form input[name="csrfmiddlewaretoken"]').value;
+const jsonRequest = (url, body) => fetch(url, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken()},
+  body: JSON.stringify(body)
+});
+const renderPeople = (people) => {
+  const container = document.querySelector('#people');
+  container.innerHTML = '';
+  if (!people.length) {
+    container.innerHTML = '<p class="muted">No matching travelers are nearby yet.</p>';
+    return;
+  }
+  people.forEach(person => {
+    const item = document.createElement('article');
+    item.className = 'item';
+    const action = person.invite_status === 'pending'
+      ? '<span class="muted">Invite sent</span>'
+      : person.open_to_share
+        ? `<button class="invite" data-id="${person.id}">Invite to ride</button>`
+        : '<span class="muted">Not open to sharing</span>';
+    const distance = person.distance_m === null ? 'same destination' : `${person.distance_m}m away`;
+    item.innerHTML = `<b>${person.username}</b><p class="muted">${distance} · ${person.destination}</p>${action}`;
+    container.appendChild(item);
+  });
+  document.querySelectorAll('.invite').forEach(button => button.addEventListener('click', async () => {
+    const response = await jsonRequest("{% url 'transport:invite' %}", {user_id: button.dataset.id});
+    const result = await response.json();
+    document.querySelector('#nearby-message').textContent = result.ok ? 'Ride invite sent.' : (result.error || 'Unable to send invite.');
+    if (result.ok) loadNearby();
+  }));
+};
+const loadNearby = async () => {
+  const response = await fetch("{% url 'transport:nearby' %}");
+  const result = await response.json();
+  document.querySelector('#nearby-message').textContent = result.message || (result.people.length ? 'Travelers near you:' : 'No matching travelers are nearby yet.');
+  renderPeople(result.people || []);
+};
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('#presence-form');
+  const message = document.querySelector('#presence-message');
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const submit = coordinates => {
+      const payload = {
+        destination: document.querySelector('#destination').value,
+        open_to_share: document.querySelector('#open-to-share').checked,
+        lat: coordinates ? coordinates.latitude : null,
+        lng: coordinates ? coordinates.longitude : null
+      };
+      jsonRequest("{% url 'transport:presence' %}", payload).then(async response => {
+        const result = await response.json();
+        message.textContent = result.ok ? 'Presence updated. Nearby travelers are loading.' : (result.error || 'Unable to update presence.');
+        if (result.ok) loadNearby();
+      }).catch(() => { message.textContent = 'Unable to update presence. Check your connection and try again.'; });
+    };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => submit(position.coords),
+        () => {         message.textContent = 'Location permission was denied. Matching travelers by destination instead.'; submit(null); },
+        {enableHighAccuracy: true, timeout: 10000}
+      );
+    } else {
+      message.textContent = 'This browser does not support location. Presence will be saved without nearby matching.';
+      submit(null);
+    }
+  });
+  document.querySelectorAll('.respond').forEach(button => button.addEventListener('click', async () => {
+    const response = await jsonRequest(`/transport/ride/invite/${button.dataset.id}/respond/`, {answer: button.dataset.answer});
+    if (response.ok) location.reload();
+  }));
+  {% if has_location %}loadNearby();{% endif %}
+});
+</script>{% endblock %}

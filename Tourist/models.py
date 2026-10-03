@@ -11,6 +11,23 @@ class TouristProfile(models.Model):
         return f"{self.user.username}'s Tourist Profile"
 
 
+class SOSAlert(models.Model):
+    tourist = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sos_alerts',
+    )
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f"SOS from {self.tourist.username} at {self.latitude}, {self.longitude}"
+
+
 class AssistanceRequest(models.Model):
     PACKAGE_CHOICES = [
         (2, '2 hours - Rs 500'),

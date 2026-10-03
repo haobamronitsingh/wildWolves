@@ -1,0 +1,5 @@
+<nav class="feature-bar">
+  <a class="{% if active_feature == 'ride' %}active{% endif %}" href="{% url 'transport:ride' %}">Ride share</a>
+  <a class="{% if active_feature == 'local' %}active{% endif %}" href="{% url 'transport:local' %}">Local bus &amp; auto</a>
+  <a class="{% if active_feature == 'private' %}active{% endif %}" href="{% url 'transport:private' %}">Private transportation</a>
+</nav>
